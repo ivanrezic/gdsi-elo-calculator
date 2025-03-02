@@ -5,8 +5,7 @@ def get_probs_pre(player1_elo, player2_elo):
 
 
 def get_probs_post(match_result):
-    sets_num = 2
-    winner_id = 1
+    sets_num = len(match_result)
 
     gems_num = 0
     for s in match_result:

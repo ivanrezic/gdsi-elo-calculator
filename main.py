@@ -1,107 +1,80 @@
-import dash
-import dash_bootstrap_components as dbc
-from dash import html, Output, Input
-from dash.exceptions import PreventUpdate
+import streamlit as st
+import pandas as pd
+import numpy as np
+import math
 
 from utils import calc_elos
 
-app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
-server = app.server
-
-app.layout = dbc.Container(
-    [
-        dbc.Row(
-            [
-                dbc.Col(html.B(""), className='col-md-1'),
-                dbc.Col(html.B("Elo"), className='col-md-2'),
-                dbc.Col(html.B("Broj odigranih meceva"), className='col-md-2'),
-                dbc.Col(html.B("Set 1"), className='col-md-1'),
-                dbc.Col(html.B("Set 2"), className='col-md-1'),
-                dbc.Col(html.B("Set 3"), className='col-md-1'),
-                dbc.Col(html.B("Novi Elo"), className='col-md-1'),
-                dbc.Col(html.B("Razlika"), className='col-md-1'),
-            ], className="mt-5 mb-4"
-        ),
-        dbc.Row(
-            [
-                dbc.Col(html.B("Igrac 1"), className='col-md-1'),
-                dbc.Col(dbc.Input(id="elo1", type="number", min=0, step=0.01, placeholder=1432.33),
-                        className='col-md-2'),
-                dbc.Col(dbc.Input(id="matches1", type="number", min=0, step=1, placeholder=66), className='col-md-2'),
-                dbc.Col(dbc.Input(id="set11", type="number", min=0, max=7, step=1, placeholder=6),
-                        className='col-md-1'),
-                dbc.Col(dbc.Input(id="set12", type="number", min=0, max=7, step=1, placeholder=7),
-                        className='col-md-1'),
-                dbc.Col(dbc.Input(id="set13", type="number", min=0, max=10, step=1), className='col-md-1'),
-                dbc.Col(html.H4(id="novi-elo1"), className='col-md-1', style={"color": "blue"}),
-                dbc.Col(id="razlika1"),
-            ], className="mb-3"
-        ),
-        dbc.Row(
-            [
-                dbc.Col(html.B("Igrac 2"), className='col-md-1'),
-                dbc.Col(dbc.Input(id="elo2", type="number", min=0, step=0.01, placeholder=1329.68),
-                        className='col-md-2'),
-                dbc.Col(dbc.Input(id="matches2", type="number", min=0, step=1, placeholder=18), className='col-md-2'),
-                dbc.Col(dbc.Input(id="set21", type="number", min=0, max=7, step=1, placeholder=4),
-                        className='col-md-1'),
-                dbc.Col(dbc.Input(id="set22", type="number", min=0, max=7, step=1, placeholder=6),
-                        className='col-md-1'),
-                dbc.Col(dbc.Input(id="set23", type="number", min=0, max=10, step=1), className='col-md-1'),
-                dbc.Col(html.H4(id="novi-elo2"), className='col-md-1', style={"color": "blue"}),
-                dbc.Col(id="razlika2"),
-            ]
-        ),
-    ]
+# Postavljanje konfiguracije stranice
+st.set_page_config(
+    page_title="ELO Kalkulator",
+    layout="wide"
 )
 
+# Dodavanje naslova i opisa
+st.title("GDSI ELO Kalkulator")
+st.write("Unesite ELO prije meča, broj mečeva svakog igrača i rezultat prva dva seta te dobijte novi ELO za oba igrača. Unos rezultata trećeg seta je onemogućen jer 3. set nije bitan za izračun ELO-a.")
 
-@app.callback(
-    Output(component_id='novi-elo1', component_property='children'),
-    Output(component_id='novi-elo2', component_property='children'),
-    Output(component_id='razlika1', component_property='children'),
-    Output(component_id='razlika2', component_property='children'),
-    Input(component_id='elo1', component_property='value'),
-    Input(component_id='matches1', component_property='value'),
-    Input(component_id='set11', component_property='value'),
-    Input(component_id='set12', component_property='value'),
-    Input(component_id='set13', component_property='value'),
-    Input(component_id='elo2', component_property='value'),
-    Input(component_id='matches2', component_property='value'),
-    Input(component_id='set21', component_property='value'),
-    Input(component_id='set22', component_property='value'),
-    Input(component_id='set23', component_property='value'),
-)
-def update_output_div(elo1, matches1, set11, set12, set13,
-                      elo2, matches2, set21, set22, set23):
-    if not (elo1 and elo2 and matches1 and matches2 and set11 and set21 and set12 and set22):
-        raise PreventUpdate
+# Stvaranje kontejnera za glavni sadržaj aplikacije
+main_container = st.container()
 
+# Stvaranje dva stupca za igrače
+with main_container:
+    # Red zaglavlja
+    header_cols = st.columns([1, 2, 1, 1, 1, 0.2, 1, 1])
+    header_cols[0].write("**Igrač**")
+    header_cols[1].write("**ELO**")
+    header_cols[2].write("**Broj mečeva**")
+    header_cols[3].write("**Set 1**")
+    header_cols[4].write("**Set 2**")
+    header_cols[5].write("")
+    header_cols[6].write("**Novi ELO**")
+    header_cols[7].write("**Razlika**")
+    
+    # Red za Igrača 1
+    p1_cols = st.columns([1, 2, 1, 1, 1, 0.2, 1, 1])
+    p1_cols[5].write("")
+    p1_cols[0].write("**Igrač 1**")
+    elo1 = p1_cols[1].number_input("ELO 1", min_value=0.0, value=1432.33, step=0.01, key="elo1", label_visibility="collapsed")
+    matches1 = p1_cols[2].number_input("Mečevi 1", min_value=0, value=66, step=1, key="matches1", label_visibility="collapsed")
+    set11 = p1_cols[3].number_input("Set 1-1", min_value=0, max_value=7, value=6, step=1, key="set11", label_visibility="collapsed")
+    set12 = p1_cols[4].number_input("Set 1-2", min_value=0, max_value=7, value=7, step=1, key="set12", label_visibility="collapsed")
+    
+    # Red za Igrača 2
+    p2_cols = st.columns([1, 2, 1, 1, 1, 0.2, 1, 1])
+    p2_cols[5].write("")
+    p2_cols[0].write("**Igrač 2**")
+    elo2 = p2_cols[1].number_input("ELO 2", min_value=0.0, value=1329.68, step=0.01, key="elo2", label_visibility="collapsed")
+    matches2 = p2_cols[2].number_input("Mečevi 2", min_value=0, value=18, step=1, key="matches2", label_visibility="collapsed")
+    set21 = p2_cols[3].number_input("Set 2-1", min_value=0, max_value=7, value=4, step=1, key="set21", label_visibility="collapsed")
+    set22 = p2_cols[4].number_input("Set 2-2", min_value=0, max_value=7, value=6, step=1, key="set22", label_visibility="collapsed")
+
+# Izračunaj nove ELO bodove ako su sva potrebna polja popunjena
+if all([elo1, elo2, matches1, matches2, set11 is not None, set12 is not None, set21 is not None, set22 is not None]):
+    # Stvaranje strukture rezultata meča
     match_result = [(set11, set21), (set12, set22)]
-    if set13 and set23:
-        match_result.append((set13, set23))
-
-    a, b = calc_elos(elo1, matches1, elo2, matches2, match_result)
-
-    if a > elo1:
-        a_diff = get_diff_div(a - elo1, "green", "+")
+    
+    # Dodaj treći set ako oba igrača imaju rezultat za njega
+    if (set11 > set21 and set12 < set22) or (set11 < set21 and set12 > set22):
+        match_result.append((10, 8)) # rezultat 3. seta je nebitan pa su 10 i 8 samo fiktivno dodani
+    
+    # Izračunaj nove ELO bodove
+    new_elo1, new_elo2 = calc_elos(elo1, matches1, elo2, matches2, match_result)
+    
+    # Prikaži rezultate
+    p1_cols[6].markdown(f"<h4 style='color:blue'>{round(new_elo1, 0)}</h4>", unsafe_allow_html=True)
+    p2_cols[6].markdown(f"<h4 style='color:blue'>{round(new_elo2, 0)}</h4>", unsafe_allow_html=True)
+    
+    # Izračunaj i prikaži razlike
+    diff1 = new_elo1 - elo1
+    diff2 = new_elo2 - elo2
+    
+    if diff1 > 0:
+        p1_cols[7].markdown(f"<h4 style='color:green'>+{round(diff1, 2)}</h4>", unsafe_allow_html=True)
     else:
-        a_diff = get_diff_div(elo1 - a, "red", "-")
-
-    if b > elo2:
-        b_diff = get_diff_div(b - elo2, "green", "+")
+        p1_cols[7].markdown(f"<h4 style='color:red'>{round(diff1, 2)}</h4>", unsafe_allow_html=True)
+        
+    if diff2 > 0:
+        p2_cols[7].markdown(f"<h4 style='color:green'>+{round(diff2, 2)}</h4>", unsafe_allow_html=True)
     else:
-        b_diff = get_diff_div(elo2 - b, "red", "-")
-
-    return round(a, 0), round(b, 0), a_diff, b_diff
-
-
-def get_diff_div(diff, color, sign):
-    return dbc.Col(html.H4(f"{sign}{round(diff, 2)}"), className='col-md-1', style={"color": color})
-
-
-if __name__ == "__main__":
-    app.run_server()
-
-if __name__ == '__main__':
-    app.run_server(debug=True)
+        p2_cols[7].markdown(f"<h4 style='color:red'>{round(diff2, 2)}</h4>", unsafe_allow_html=True)
