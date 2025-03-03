@@ -13,6 +13,9 @@ st.set_page_config(
 
 # Dodavanje naslova i opisa
 st.title("GDSI ELO Kalkulator")
+st.markdown("""
+⚠️ Za bolje iskustvo na malom ekranu, okrenite uređaj u pejzažni (landscape) način.
+""", unsafe_allow_html=True)
 st.write("Unesite ELO prije meča, broj mečeva svakog igrača i rezultat prva dva seta te dobijte novi ELO za oba igrača. Unos rezultata trećeg seta je onemogućen jer 3. set nije bitan za izračun ELO-a.")
 
 # Stvaranje kontejnera za glavni sadržaj aplikacije
